@@ -3,6 +3,9 @@ set -e
 
 export USER=root
 
+# Clean up stale VNC lock files from previous runs
+rm -f /tmp/.X1-lock /tmp/.X11-unix/X1
+
 # Start VNC server (tightvnc)
 vncserver :1 -geometry ${VNC_RESOLUTION:-1920x1080} -depth 24
 
