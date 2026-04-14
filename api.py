@@ -1,11 +1,9 @@
 """Simple HTTP API to trigger the Teamie scraper and serve results."""
 
-import asyncio
 import json
 import subprocess
 from pathlib import Path
 from http.server import HTTPServer, BaseHTTPRequestHandler
-from threading import Thread
 
 
 OUTPUT_DIR = Path("/app/data/output")
@@ -33,6 +31,13 @@ class ScrapeHandler(BaseHTTPRequestHandler):
                 cwd="/app",
             )
 
+            output_text = result.stdout + result.stderr
+            auth_failed = (
+                "Authentication failed" in output_text
+                or "AUTHENTICATION ERROR" in output_text
+                or result.returncode == 1 and "assignments" not in output_text.lower()
+            )
+
             # Find the latest output file
             latest = self._find_latest_output()
             data = None
@@ -41,6 +46,7 @@ class ScrapeHandler(BaseHTTPRequestHandler):
 
             self._respond(200, {
                 "success": result.returncode == 0,
+                "auth_failed": auth_failed,
                 "stdout": result.stdout[-2000:] if result.stdout else "",
                 "stderr": result.stderr[-2000:] if result.stderr else "",
                 "data": data,
