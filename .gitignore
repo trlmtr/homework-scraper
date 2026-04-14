@@ -1,0 +1,33 @@
+# Browser session data (contains auth cookies)
+data/browser_session/
+
+# Configuration
+.env
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+env/
+venv/
+ENV/
+
+# Output & Logs
+data/output/*.json
+logs/*.log
+logs/*.png
+
+# IDE
+.vscode/
+.idea/
+*.swp
+
+# OS
+.DS_Store
+Thumbs.db
+._*
+
+# Playwright
+playwright/.auth/

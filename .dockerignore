@@ -1,0 +1,14 @@
+venv/
+data/browser_session/
+data/output/
+logs/
+.git/
+.gitignore
+.env
+._*
+__pycache__/
+*.pyc
+.DS_Store
+README.md
+docker-compose.service.yaml
+docker-compose.hostinger.yaml

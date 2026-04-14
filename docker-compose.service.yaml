@@ -1,0 +1,36 @@
+  # Add this service to ~/docker-world/docker-compose.yaml on the Jetson
+  # Paste it under the 'services:' section
+
+  teamie-scraper:
+    build:
+      context: ./teamie-scraper
+      dockerfile: Dockerfile
+    container_name: teamie-scraper
+    restart: unless-stopped
+    networks:
+      - automation
+    shm_size: "2gb"
+    ports:
+      - "6080:6080"
+      - "5901:5901"
+    volumes:
+      - ./teamie-scraper/data:/app/data
+      - ./teamie-scraper/session:/app/data/browser_session
+    environment:
+      - TZ=Europe/London
+      - TEAMIE_URL=https://lms.asl.org/dash/#/
+      - GOOGLE_EMAIL=kuzey_matras@asl.org
+      - TEAMIE_USER_ID=207
+      - HEADLESS=false
+      - USE_PERSISTENT_SESSION=true
+      - SESSION_DIR=/app/data/browser_session
+      - OUTPUT_DIR=/app/data/output
+      - LOG_DIR=/app/logs
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.teamie.rule=Host(`kdtmuk.ddns.net`) && PathPrefix(`/teamie`)"
+      - "traefik.http.routers.teamie.entrypoints=websecure"
+      - "traefik.http.routers.teamie.tls.certresolver=letsencrypt"
+      - "traefik.http.services.teamie.loadbalancer.server.port=6080"
+      - "traefik.http.middlewares.teamie-stripprefix.stripprefix.prefixes=/teamie"
+      - "traefik.http.routers.teamie.middlewares=teamie-stripprefix"

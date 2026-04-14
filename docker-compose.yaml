@@ -1,0 +1,27 @@
+services:
+  teamie-scraper:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: teamie-scraper
+    restart: unless-stopped
+    shm_size: "2gb"
+    ports:
+      - "6080"
+    labels:
+      - traefik.enable=true
+      - traefik.http.routers.${COMPOSE_PROJECT_NAME}.rule=Host(`${COMPOSE_PROJECT_NAME}.${TRAEFIK_HOST}`)
+      - traefik.http.routers.${COMPOSE_PROJECT_NAME}.entrypoints=websecure
+      - traefik.http.routers.${COMPOSE_PROJECT_NAME}.tls.certresolver=letsencrypt
+      - traefik.http.services.${COMPOSE_PROJECT_NAME}.loadbalancer.server.port=6080
+    env_file:
+      - .env
+    environment:
+      - TZ=${TZ}
+    volumes:
+      - scraper_data:/app/data
+      - scraper_session:/app/data/browser_session
+
+volumes:
+  scraper_data:
+  scraper_session:
