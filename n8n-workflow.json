@@ -1,0 +1,163 @@
+{
+  "name": "Teamie Homework Scraper",
+  "nodes": [
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "cronExpression",
+              "expression": "0 15 15 * * 1-5"
+            }
+          ]
+        }
+      },
+      "id": "11111111-1111-1111-1111-111111111101",
+      "name": "Every Weekday 3:15 PM",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [240, 300]
+    },
+    {
+      "parameters": {
+        "method": "GET",
+        "url": "http://172.18.0.1:8088/run",
+        "options": {
+          "timeout": 300000
+        }
+      },
+      "id": "11111111-1111-1111-1111-111111111102",
+      "name": "Run Scraper",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [460, 300]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "loose"
+          },
+          "conditions": [
+            {
+              "id": "cond-auth-failed",
+              "leftValue": "={{ $json.auth_failed }}",
+              "rightValue": true,
+              "operator": {
+                "type": "boolean",
+                "operation": "true"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "11111111-1111-1111-1111-111111111103",
+      "name": "Auth Failed?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [680, 300]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.telegram.org/botYOUR_BOT_TOKEN_HERE/sendMessage",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "{ \"chat_id\": \"8668288301\", \"text\": \"⚠️ <b>Teamie: Google Auth Expired</b>\\n\\nThe scraper couldn't log in — your Google session has expired.\\n\\n🔑 Please re-login:\\n<a href=\\\"https://teamie-scraper.kdtmuk.tech/vnc.html\\\">teamie-scraper.kdtmuk.tech/vnc.html</a>\\n\\n1. Open the link above\\n2. Open Chromium\\n3. Go to lms.asl.org\\n4. Complete Google login\\n\\nNext scheduled run will work automatically.\", \"parse_mode\": \"HTML\", \"disable_web_page_preview\": false }",
+        "options": {}
+      },
+      "id": "11111111-1111-1111-1111-111111111104",
+      "name": "Alert: Re-login Required",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [900, 160]
+    },
+    {
+      "parameters": {
+        "jsCode": "const data = $input.first().json;\nconst tasks = data.data?.upcoming_tasks || [];\nconst total = data.data?.summary?.assignments || 0;\nconst todoCount = data.data?.todo_count || 0;\nconst statusBreakdown = data.data?.summary?.status_breakdown || [];\n\nconst today = new Date().toLocaleDateString('en-GB', {\n  day: 'numeric', month: 'short', year: 'numeric'\n});\n\nconst lines = [`📚 <b>Teamie Homework Update</b>\\n${today}`];\n\nif (total === 0) {\n  lines.push('\\n✅ No assignments found. All clear!');\n} else {\n  lines.push(`\\n📊 <b>${total}</b> assignments | <b>${todoCount}</b> pending todos`);\n\n  if (statusBreakdown.length > 0) {\n    lines.push(statusBreakdown.join('  |  '));\n  }\n\n  if (tasks.length > 0) {\n    lines.push('\\n📋 <b>Upcoming:</b>');\n    for (const t of tasks) {\n      const icon = t.status_icon === 'OVERDUE' ? '🔴'\n                 : t.status_icon === 'done'    ? '✅'\n                 : '📌';\n      lines.push(`${icon} <b>${t.date}</b>  ${t.class}: ${t.task}`);\n    }\n  }\n}\n\nreturn [{ json: { message: lines.join('\\n') } }];"
+      },
+      "id": "11111111-1111-1111-1111-111111111105",
+      "name": "Format Summary",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [900, 440]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.telegram.org/botYOUR_BOT_TOKEN_HERE/sendMessage",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ chat_id: '8668288301', text: $json.message, parse_mode: 'HTML' }) }}",
+        "options": {}
+      },
+      "id": "11111111-1111-1111-1111-111111111106",
+      "name": "Send Summary",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [1120, 440]
+    }
+  ],
+  "connections": {
+    "Every Weekday 3:15 PM": {
+      "main": [
+        [
+          {
+            "node": "Run Scraper",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Run Scraper": {
+      "main": [
+        [
+          {
+            "node": "Auth Failed?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Auth Failed?": {
+      "main": [
+        [
+          {
+            "node": "Alert: Re-login Required",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Format Summary",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Format Summary": {
+      "main": [
+        [
+          {
+            "node": "Send Summary",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "tags": []
+}
